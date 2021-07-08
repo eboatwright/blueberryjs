@@ -11,7 +11,7 @@
    # # . . . . . . . . # #       #   # #           # # 
      # # # . . . . # # #    #     # #       # # # # # 
          # # # # # #
-
+         
          blueberry.js is a lightweight game framework for making games in JavaScript, HTML5, and CSS3!
 */
 

@@ -1,0 +1,37 @@
+- v0.0.1:
+  - ecs:
+    - entities
+    - components
+    - adding components to entities
+    - systems
+    - checking if entities match systems
+    - scenes
+    - adding entities to scenes
+    - adding systems to scenes
+    - scene rendering / updating
+
+  - vector2 class:
+    - initial class
+    - math functions
+
+  - built in components:
+    - transform
+    - image renderer
+    - box collider
+    - rigid body
+
+  - built in systems
+    - image renderer system
+    - rigid body system
+
+  - keyboard input:
+    - helper function for getting input
+    - overriding javascript's keydown and keyup functions
+
+  - built in functions
+    - changing scenes
+    - creating images
+    - checking if entities are overlapping
+    - overriding window.onresize
+
+  - added parameter for changing the canvas' screen size
