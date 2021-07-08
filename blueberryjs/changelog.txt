@@ -1,3 +1,19 @@
+ - v0.0.2:
+   - added text renderer
+   - added offset parameter to box collider
+   - added get components function to entities
+   - added getScreenWidth() and getScreenHeight() functions
+   - added randomRange(min, max) function
+   - fixed miscellaneous bugs
+   - seperated render() and update()
+   - added touch input support
+   - added mouse input support
+   - added flappy bird demo!
+
+
+
+
+
 - v0.0.12:
   - built in audio component
   - added entity tagging system
