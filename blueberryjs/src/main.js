@@ -66,8 +66,8 @@ function init() {
 
     player
         .addComponent(new Transform(new Vector2(window.innerWidth / scaleFactor / 2 - 8, window.innerHeight / scaleFactor / 2 - 8)))
-        .addComponent(new BoxCollider(new Vector2(10, 17)))
-        .addComponent(new RigidBody(0, new Vector2(0.8, 0.8)))
+        .addComponent(new BoxCollider(new Vector2(10, 17), new Vector2(0, 0)))
+        .addComponent(new RigidBody(0, new Vector2(0.2, 0.2)))
         .addComponent(new PlayerController(0.72))
         .addComponent(new ImageRenderer(createImage("img/player.png")))
         .addComponent(new SoundEffect("sfx/baDing.wav"))
@@ -78,7 +78,7 @@ function init() {
 
     testObject
         .addComponent(new Transform(new Vector2(5, 5)))
-        .addComponent(new BoxCollider(new Vector2(10, 17)))
+        .addComponent(new BoxCollider(new Vector2(10, 17), new Vector2(0, 0)))
         .addComponent(new ImageRenderer(createImage("img/player.png")))
 
         .addTag("testObject");
@@ -86,9 +86,13 @@ function init() {
     changeScene(gameScene);
 }
 
+function update() {
+    updateScene();
+}
+
 function render() {
     renderScene();
-    context.fillText("collides: " + boxCollidersOverlap(player, testObject), 1, 11);
+    context.fillText("collides: " + boxCollidersOverlap(player.getComponent("transform"), player.getComponent("boxCollider"), testObject.getComponent("transform"), testObject.getComponent("boxCollider")), 1, 11);
 }
 
 start(SCREEN_SCALE_FACTOR);
