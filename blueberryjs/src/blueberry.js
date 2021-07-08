@@ -31,12 +31,20 @@ class Entity {
         // INITIALIZE VARIABLES
         this.id = id;
         this.components = [];
+        this.tags = [];
         this.destroyed = false;
     }
 
     destroy() {
         // A HELPER FUNCTION FOR DESTROYING ENTITIES
         this.destroyed = true;
+    }
+
+    addTag(tag) {
+        // A HELPER FUNCTION FOR ADDING TAGS
+        this.tags.push(tag);
+        // FOR ONE LINE TAG ADDING
+        return this;
     }
 
     addComponent(component) {
@@ -113,6 +121,63 @@ class Scene {
         this.systems.push(system);
         // RETURN THIS SCENE (THIS IS USED FOR THE ONE LINE SYSTEM ADD)
         return this;
+    }
+
+    // RETURNS FIRST ENTITY FOUND THAT HAS SPECIFIED COMPONENT
+    findEntityWithComponent(componentID) {
+        // LOOP THROUGH EACH ENTITY
+        for(var i = 0; i < this.entities.length; i++)
+            if(this.entities[i].hasComponent(componentID)) // CHECK IF HAS COMPONENT
+                return this.entities[i]; // IF SO RETURN IT
+        // IF NOT, RETURN NULL
+        return null;
+    }
+
+    // RETURNS LIST OF ENTITIES FOUND THAT HAVE SPECIFIED COMPONENT
+    findEntitiesWithComponent(componentID) {
+        // TEMPORARY VARIABLE FOR FOUND ENTITIES
+        var found = []
+        // LOOP THROUGH EACH ENTITY
+        for(var i = 0; i < this.entities.length; i++)
+             // CHECK IF HAS COMPONENT
+            if(this.entities[i].hasComponent(componentID)) // IF SO, ADD TO LIST
+                found.push(this.entities[i]);
+        // RETURN LIST
+        return found;
+    }
+
+    // RETURNS FIRST COMPONENT FOUND IN ENTITIES
+    findComponent(componentID) {
+        for(var i = 0; i < this.entities.length; i++)
+            if(this.entities[i].hasComponent(componentID))
+                return this.entities[i].getComponent(componentID);
+        return null;
+    }
+
+    // RETURNS LIST OF COMPONENTS FOUND IN ENTITIES
+    findComponents(componentID) {
+        var found = []
+        for(var i = 0; i < this.entities.length; i++)
+            if(this.entities[i].hasComponent(componentID))
+                found.push(this.entities[i].getComponent(componentID));
+        return found;
+    }
+
+    // RETURNS FIRST ENTITY FOUND WITH TAG
+    findEntityWithTag(tag) {
+        for(var i = 0; i < this.entities.length; i++)
+            if(this.entities[i].tags.includes(tag))
+                return this.entities[i];
+        return null;
+    }
+
+    // RETURNS LIST OF ENTITIES WITH SPECIFIED TAG
+    findEntitiesWithTag(tag) {
+        var found = [];
+        for(var i = 0; i < this.entities.length; i++)
+            if(this.entities[i].tags.includes(tag))
+                found.push(this.entities[i]);
+        return found;
     }
 
     render(context) {
@@ -225,6 +290,19 @@ class RigidBody extends Component {
     }
 }
 
+class SoundEffect extends Component {
+    constructor(src) {
+        super("soundEffect");
+        this.src = src;
+    }
+
+    play() {
+        var sfx = new Audio();
+        sfx.src = this.src;
+        sfx.play();
+    }
+}
+
 
 // BUILD IN SYSTEMS
 class ImageRendererSystem extends System {
@@ -288,8 +366,8 @@ function renderScene() {
 }
 
 // START FUNCTION (CALL THIS AT THE END OF YOUR GAME SCRIPT)
-function start(_scaleFactor) {
-    scaleFactor = _scaleFactor;
+function start(scaleFactor) {
+    this.scaleFactor = scaleFactor;
 
     // OVERRIDE WINDOW RESIZE FUNCTION TO UPDATE CANVAS
     window.onresize = function() {

@@ -3,6 +3,7 @@ class PlayerController extends Component {
     constructor(moveSpeed) {
         super("playerController");
         this.moveSpeed = moveSpeed;
+        this.spaceReleased = true;
     }
 }
 
@@ -12,15 +13,15 @@ class PlayerController extends Component {
 class PlayerControllerSystem extends System {
     constructor() {
         super("playerControllerSystem");
-        this.addRequirement("transform");
         this.addRequirement("rigidBody");
         this.addRequirement("playerController");
+        this.addRequirement("soundEffect");
     }
 
     render(entity, context) {
-        var transform = entity.getComponent("transform");
         var rigidBody = entity.getComponent("rigidBody");
         var playerController = entity.getComponent("playerController");
+        var soundEffect = entity.getComponent("soundEffect");
 
         var input = Vector2.ZERO();
 
@@ -30,15 +31,25 @@ class PlayerControllerSystem extends System {
         if(isKeyDown("d")) input.x = 1;
 
         rigidBody.velocity = Vector2.add(rigidBody.velocity, Vector2.multiply(Vector2.normalize(input), playerController.moveSpeed));
+
+        if(isKeyDown(" ")) {
+            if(playerController.spaceReleased) {
+                soundEffect.play();
+                playerController.spaceReleased = false;
+            }
+        } else
+            playerController.spaceReleased = true;
     }
 }
 
 
 
 // VARIABLES
+const SCREEN_SCALE_FACTOR = 3;
+
 var gameScene;
 var player;
-var block;
+var testObject;
 
 function init() {
     gameScene = new Scene("scene");
@@ -58,21 +69,26 @@ function init() {
         .addComponent(new BoxCollider(new Vector2(10, 17)))
         .addComponent(new RigidBody(0, new Vector2(0.8, 0.8)))
         .addComponent(new PlayerController(0.72))
-        .addComponent(new ImageRenderer(createImage("img/player.png")));
+        .addComponent(new ImageRenderer(createImage("img/player.png")))
+        .addComponent(new SoundEffect("sfx/baDing.wav"))
+        
+        .addTag("player");
 
-    block = gameScene.createEntity("block");
+    testObject = gameScene.createEntity("testObject");
 
-    block
+    testObject
         .addComponent(new Transform(new Vector2(5, 5)))
         .addComponent(new BoxCollider(new Vector2(10, 17)))
-        .addComponent(new ImageRenderer(createImage("img/player.png")));
+        .addComponent(new ImageRenderer(createImage("img/player.png")))
+
+        .addTag("testObject");
 
     changeScene(gameScene);
 }
 
 function render() {
     renderScene();
-    context.fillText("collides: " + boxCollidersOverlap(player, block), 1, 11);
+    context.fillText("collides: " + boxCollidersOverlap(player, testObject), 1, 11);
 }
 
-start(3);
+start(SCREEN_SCALE_FACTOR);

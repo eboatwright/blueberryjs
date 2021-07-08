@@ -1,3 +1,18 @@
+- v0.0.12:
+  - built in audio component
+  - added entity tagging system
+  - extra scene functions:
+    - find entity of type
+    - find entities of type
+    - find component
+    - find components
+    - find entity with tag
+    - find entities with tag
+
+
+
+
+
 - v0.0.1:
   - ecs:
     - entities
