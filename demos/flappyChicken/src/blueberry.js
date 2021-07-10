@@ -20,7 +20,7 @@
 // COMPONENT CLASS
 class Component {
     constructor(id) {
-        // INITIALIZE ID
+        // INITIALIZE VARIABLES
         this.id = id;
     }
 }
@@ -33,11 +33,22 @@ class Entity {
         this.components = [];
         this.tags = [];
         this.destroyed = false;
+        this.parent = null;
     }
 
     destroy() {
         // A HELPER FUNCTION FOR DESTROYING ENTITIES
         this.destroyed = true;
+    }
+
+    // HELPER FUNCTION FOR SETTING PARENT
+    setParent(entity) {
+        this.parent = entity;
+    }
+
+    // HELPER FUNCTION FOR GETTING PARENT
+    getParent() {
+        return this.parent;
     }
 
     addTag(tag) {
@@ -196,10 +207,10 @@ class Scene {
     }
 
     update() {
-        // LOOP THROUGH ENTITY LIST BACKWARDS
-        for(var i = this.entities.length - 1; i >= 0; i--) {
-            // LOOP THROUGH SYSTEM LIST
-            for(var j = 0; j < this.systems.length; j++) {
+        // LOOP THROUGH SYSTEM LIST
+        for(var j = 0; j < this.systems.length; j++) {
+            // LOOP THROUGH ENTITY LIST BACKWARDS
+            for(var i = this.entities.length - 1; i >= 0; i--) {
                 // CHECK IF ENTITY IS DESTROYED
                 if(this.entities[i].destroyed) // IF SO, REMOVE FROM LIST
                     this.entities.splice(i, 1);
@@ -211,10 +222,10 @@ class Scene {
     }
 
     render(context) {
-        // LOOP THROUGH ENTITY LIST
-        for(var i = 0; i < this.entities.length; i++) {
-            // LOOP THROUGH SYSTEM LIST
-            for(var j = 0; j < this.systems.length; j++) {
+        // LOOP THROUGH SYSTEM LIST
+        for(var j = 0; j < this.systems.length; j++) {
+            // LOOP THROUGH ENTITY LIST
+            for(var i = 0; i < this.entities.length; i++) {
                 // IF NOT CHECK IF ENTITY MATCHES SYSTEM
                 if(this.systems[j].matches(this.entities[i])) // IF SO, RENDER ENTITY WITH SYSTEM AND CONTEXT
                     this.systems[j].render(this.entities[i], context);
@@ -338,6 +349,16 @@ class TextRenderer extends Component {
     }
 }
 
+class MapRenderer extends Component {
+    constructor(image, tileSize, map, collidable) {
+        super("mapRenderer");
+        this.image = image;
+        this.tileSize = tileSize;
+        this.map = map;
+        this.collidable = collidable;
+    }
+}
+
 
 // BUILT IN SYSTEMS
 class ImageRendererSystem extends System {
@@ -367,12 +388,14 @@ class RigidBodySystem extends System {
     }
 
     update(entity) {
-        var transform = entity.getComponent("transform");
-        var rigidBody = entity.getComponent("rigidBody");
+        if(!entity.tags.includes("collidesWithMap")) {
+            var transform = entity.getComponent("transform");
+            var rigidBody = entity.getComponent("rigidBody");
 
-        rigidBody.velocity.y += rigidBody.gravity;
-        rigidBody.velocity = Vector2.multiply(rigidBody.velocity, rigidBody.friction);
-        transform.position = Vector2.add(transform.position, rigidBody.velocity);
+            rigidBody.velocity.y += rigidBody.gravity;
+            rigidBody.velocity = Vector2.multiply(rigidBody.velocity, rigidBody.friction);
+            transform.position = Vector2.add(transform.position, rigidBody.velocity);
+        }
     }
 }
 
@@ -388,6 +411,116 @@ class TextRendererSystem extends System {
         var textRenderer = entity.getComponent("textRenderer");
 
         context.fillText(textRenderer.text, transform.position.x, transform.position.y);
+    }
+}
+
+class MapRendererSystem extends System {
+    constructor() {
+        super("mapRendererSystem");
+        this.addRequirement("mapRenderer");
+    }
+
+    render(entity, context) {
+        var mapRenderer = entity.getComponent("mapRenderer");
+
+        for(var y = 0; y < mapRenderer.map.length; y++)
+            for(var x = 0; x < mapRenderer.map[y].length; x++)
+                if(mapRenderer.map[y][x] > 0)
+                    context.drawImage(mapRenderer.image, (mapRenderer.map[y][x] - 1) * mapRenderer.tileSize, 0, mapRenderer.tileSize, mapRenderer.tileSize, x * mapRenderer.tileSize, y * mapRenderer.tileSize, mapRenderer.tileSize, mapRenderer.tileSize);
+    }
+}
+
+class MapCollisionSystem extends System {
+    constructor() {
+        super("mapCollisionSystem");
+        this.addRequirement("transform");
+        this.addRequirement("boxCollider");
+        this.addRequirement("rigidBody");
+    }
+
+    update(entity) {
+        // CHECK IF SHOULD COLLIDE WITH MAP
+        if(entity.tags.includes("collidesWithMap")) {
+            // FIND MAP RENDERER
+            var mapRenderer = currentScene.findComponent("mapRenderer");
+            if(mapRenderer == null) return; // IF NO MAP RENDERER RETURN
+
+            // GET ENTITY'S COMPONENTS
+            var transform = entity.getComponent("transform");
+            var boxCollider = entity.getComponent("boxCollider");
+            var rigidBody = entity.getComponent("rigidBody");
+
+            // MAP TEMPORARY TILE VARIABLE
+            var tile = new Entity("tile");
+            tile
+                .addComponent(new Transform(Vector2.ZERO()))
+                .addComponent(new BoxCollider(new Vector2(mapRenderer.tileSize, mapRenderer.tileSize), Vector2.ZERO()));
+            
+            // GET TILE'S COMPONENTS
+            var tileTransform = tile.getComponent("transform");
+            var tileBoxCollider = tile.getComponent("boxCollider");
+
+            // Y VELOCITY PHYSICS
+            rigidBody.velocity.y += rigidBody.gravity;
+            rigidBody.velocity.y *= rigidBody.friction.y;
+            transform.position.y += rigidBody.velocity.y;
+
+            // LOOP THROUGH EACH ROW
+            for(var y = 0; y < mapRenderer.map.length; y++)
+                // LOOP THROUGH EACH COLUMN
+                for(var x = 0; x < mapRenderer.map[y].length; x++)
+                    // CHECK IF TILE INDEX IS COLLIDABLE
+                    if(mapRenderer.collidable.includes(mapRenderer.map[y][x])) {
+                        // UPDATE TILE ENTITY'S POSITION
+                        tileTransform.position = new Vector2(x * mapRenderer.tileSize, y * mapRenderer.tileSize);
+
+                        // HELPS FIX JITTERING ¯\_(ツ)_/¯
+                        boxCollider.size.y += 0.75;
+
+                        // CHECK IF THE ENTITY AND THE TILE COLLIDE
+                        if(boxCollidersOverlap(transform, boxCollider, tileTransform, tileBoxCollider)) {
+                            // DEPENDING ON WHICH WAY THE PLAYER IS GOING ON THE Y AXIS, PLACE AT A DIFFERENT POSITION
+                            if(rigidBody.velocity.y > 0) // THIS "+ 0.75" FIXES JITTERING WHEN COLLIDING FROM THE TOP ¯\_(ツ)_/¯
+                                transform.position.y = tileTransform.position.y - boxCollider.size.y - boxCollider.offset.y + 0.75;
+                            if(rigidBody.velocity.y < 0)
+                                transform.position.y = tileTransform.position.y - boxCollider.offset.y + (boxCollider.size.y + 1);
+                            rigidBody.velocity.y = 0;
+                        }
+
+                        // HELPS FIX JITTERING ¯\_(ツ)_/¯
+                        boxCollider.size.y -= 0.75;
+                    }
+
+            // X VELOCITY PHYSICS
+            rigidBody.velocity.x *= rigidBody.friction.x;
+            transform.position.x += rigidBody.velocity.x;
+
+            // LOOP THROUGH EACH ROW
+            for(var y = 0; y < mapRenderer.map.length; y++)
+                // LOOP THROUGH EACH COLUMN
+                for(var x = 0; x < mapRenderer.map[y].length; x++)
+                    // CHECK IF TILE INDEX IS COLLIDABLE
+                    if(mapRenderer.collidable.includes(mapRenderer.map[y][x])) {
+                        // UPDATE TILE ENTITY'S POSITION
+                        tileTransform.position = new Vector2(x * mapRenderer.tileSize, y * mapRenderer.tileSize);
+
+                        // HELPS FIX JITTERING ¯\_(ツ)_/¯
+                        boxCollider.size.x -= 0.2;
+
+                        // CHECK IF THE ENTITY AND THE TILE COLLIDE
+                        if(boxCollidersOverlap(transform, boxCollider, tileTransform, tileBoxCollider)) {
+                            // DEPENDING ON WHICH WAY THE PLAYER IS GOING ON THE X AXIS, PLACE AT A DIFFERENT POSITION
+                            if(rigidBody.velocity.x > 0) // THIS "+ 0.75" FIXES JITTERING WHEN COLLIDING FROM THE LEFT ¯\_(ツ)_/¯
+                                transform.position.x = tileTransform.position.x - boxCollider.offset.x - boxCollider.size.x + 0.75;
+                            if(rigidBody.velocity.x < 0)
+                                transform.position.x = tileTransform.position.x - boxCollider.offset.x + tileBoxCollider.size.x;
+                            rigidBody.velocity.x = 0;
+                        }
+
+                        // HELPS FIX JITTERING ¯\_(ツ)_/¯
+                        boxCollider.size.x += 0.2;
+                    }
+        }
     }
 }
 
@@ -491,14 +624,16 @@ function createImage(src) {
 
 // COLLISION
 function boxCollidersOverlap(aTransform, aCollider, bTransform, bCollider) {
-    var aPosition = aTransform.position;
-    var bPosition = bTransform.position;
+    var aPosition = Vector2.add(aTransform.position, aCollider.offset);
+    var bPosition = Vector2.add(bTransform.position, bCollider.offset);
+    aPosition = new Vector2(Math.floor(aPosition.x), Math.floor(aPosition.y));
+    bPosition = new Vector2(Math.floor(bPosition.x), Math.floor(bPosition.y));
 
     return (
-        aPosition.x + aCollider.offset.x < bPosition.x + bCollider.offset.x + bCollider.size.x &&
-        aPosition.x + aCollider.offset.x + aCollider.size.x > bPosition.x + bCollider.offset.x &&
-        aPosition.y + aCollider.offset.y < bPosition.y + bCollider.offset.y + bCollider.size.y &&
-        aPosition.y + aCollider.offset.y + aCollider.size.y > bPosition.y + bCollider.offset.y
+        aPosition.x < bPosition.x + bCollider.size.x &&
+        aPosition.x + aCollider.size.x > bPosition.x &&
+        aPosition.y < bPosition.y + bCollider.size.y &&
+        aPosition.y + aCollider.size.y > bPosition.y
     );
 }
 

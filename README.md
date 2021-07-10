@@ -6,9 +6,12 @@
  and start coding in the main.js file!
  It's that easy! :D
  
-# Things In The Next Update:
+# Features In The Next Update:
  - Entity Parenting
+ - Fixed Bug With System Updating and Rendering
+ - Updated index.html
 
-# Things I Plan To Add:
+# Features I Plan To Add:
  - Spritesheet Animation
  - Platformer / Top Down Collision System
+ - Particle System

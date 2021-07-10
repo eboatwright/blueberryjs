@@ -1,3 +1,15 @@
+ - v0.0.25
+   - added entity parenting (very primitive)
+   - fixed a bug with system updating and rendering
+   - updated index.html
+   - added map renderer
+   - added platformer / top down collisions!
+   - updated default main.js to be a platformer
+
+
+
+
+
  - v0.0.2:
    - added text renderer
    - added offset parameter to box collider

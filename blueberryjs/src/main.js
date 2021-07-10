@@ -1,8 +1,10 @@
 // COMPONENTS
 class PlayerController extends Component {
-    constructor(moveSpeed) {
+    constructor(moveSpeed, jumpHeight) {
         super("playerController");
         this.moveSpeed = moveSpeed;
+        this.jumpHeight = jumpHeight;
+        this.jumpReleased = true;
         this.spaceReleased = true;
     }
 }
@@ -18,25 +20,29 @@ class PlayerControllerSystem extends System {
         this.addRequirement("soundEffect");
     }
 
-    render(entity, context) {
+    update(entity) {
         var rigidBody = entity.getComponent("rigidBody");
         var playerController = entity.getComponent("playerController");
         var soundEffect = entity.getComponent("soundEffect");
 
-        var input = Vector2.ZERO();
+        var input = 0;
 
-        if(isKeyDown("w")) input.y = -1;
-        if(isKeyDown("s")) input.y = 1;
-        if(isKeyDown("a")) input.x = -1;
-        if(isKeyDown("d")) input.x = 1;
+        if(isKeyDown("a")) input = -1;
+        if(isKeyDown("d")) input = 1;
 
-        rigidBody.velocity = Vector2.add(rigidBody.velocity, Vector2.multiply(Vector2.normalize(input), playerController.moveSpeed));
+        rigidBody.velocity.x += input * playerController.moveSpeed;
+
+        if(isKeyDown("w")) {
+            if(playerController.jumpReleased)
+                rigidBody.velocity.y = playerController.jumpHeight;
+            playerController.jumpReleased = false;
+        } else
+            playerController.jumpReleased = true;
 
         if(isKeyDown(" ")) {
-            if(playerController.spaceReleased) {
+            if(playerController.spaceReleased)
                 soundEffect.play();
-                playerController.spaceReleased = false;
-            }
+            playerController.spaceReleased = false;
         } else
             playerController.spaceReleased = true;
     }
@@ -48,8 +54,8 @@ class PlayerControllerSystem extends System {
 const SCREEN_SCALE_FACTOR = 3;
 
 var gameScene;
+var map;
 var player;
-var testObject;
 
 function init() {
     gameScene = new Scene("scene");
@@ -57,32 +63,46 @@ function init() {
     gameScene
         // UPDATE FUNCTIONS
         .addSystem(new PlayerControllerSystem())
-        .addSystem(new RigidBodySystem())
+        .addSystem(new MapCollisionSystem())
 
         // DRAW FUNCTIONS
+        .addSystem(new MapRendererSystem())
         .addSystem(new ImageRendererSystem());
 
-    player = gameScene.createEntity("player");
+    map = gameScene.createEntity("map");
+    map
+        .addComponent(new MapRenderer(createImage("img/tileset.png"), 16, [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 2, 2, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 0, 0, 0],
+            [0, 0, 0, 0, 0, 7, 8, 8, 8, 9, 0, 0, 1, 2, 2, 2, 3, 0, 0, 0, 7, 8, 9, 0, 0, 0],
+            [2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 8, 8, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [5,10, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [5, 5, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [5, 5,10, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+            [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+            [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+        ], [1, 2, 3, 4, 5, 6, 7, 8, 9]))
 
+        .addTag("map");
+
+    player = gameScene.createEntity("player");
     player
-        .addComponent(new Transform(new Vector2(window.innerWidth / scaleFactor / 2 - 8, window.innerHeight / scaleFactor / 2 - 8)))
-        .addComponent(new BoxCollider(new Vector2(10, 17), new Vector2(0, 0)))
-        .addComponent(new RigidBody(0, new Vector2(0.2, 0.2)))
-        .addComponent(new PlayerController(0.72))
+        .addComponent(new Transform(new Vector2(window.innerWidth / SCREEN_SCALE_FACTOR / 2 - 8, window.innerHeight / SCREEN_SCALE_FACTOR / 2 - 8)))
+        .addComponent(new BoxCollider(new Vector2(12, 15), new Vector2(2, 1)))
+        .addComponent(new RigidBody(0.35, new Vector2(0.2, 0.01)))
+        .addComponent(new PlayerController(0.72, -6))
         .addComponent(new ImageRenderer(createImage("img/player.png")))
         .addComponent(new SoundEffect("sfx/baDing.wav"))
         
-        .addTag("player");
-
-    testObject = gameScene.createEntity("testObject");
-
-    testObject
-        .addComponent(new Transform(new Vector2(5, 5)))
-        .addComponent(new BoxCollider(new Vector2(10, 17), new Vector2(0, 0)))
-        .addComponent(new ImageRenderer(createImage("img/player.png")))
-
-        .addTag("testObject");
-
+        .addTag("player")
+        .addTag("collidesWithMap");
+    
     changeScene(gameScene);
 }
 
@@ -92,7 +112,6 @@ function update() {
 
 function render() {
     renderScene();
-    context.fillText("collides: " + boxCollidersOverlap(player.getComponent("transform"), player.getComponent("boxCollider"), testObject.getComponent("transform"), testObject.getComponent("boxCollider")), 1, 11);
 }
 
 start(SCREEN_SCALE_FACTOR);
