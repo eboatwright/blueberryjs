@@ -20,7 +20,7 @@
 // COMPONENT CLASS
 class Component {
     constructor(id) {
-        // INITIALIZE ID
+        // INITIALIZE VARIABLES
         this.id = id;
     }
 }

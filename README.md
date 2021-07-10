@@ -10,4 +10,3 @@
  - Spritesheet Animation
  - Platformer / Top Down Collision System
  - Entity Parenting
- - The Ability To Check With Entity a Component Belongs To
