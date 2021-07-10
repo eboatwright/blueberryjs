@@ -5,8 +5,10 @@
  Copy the blueberryjs folder inside this repository,
  and start coding in the main.js file!
  It's that easy! :D
+ 
+# Things In The Next Update:
+ - Entity Parenting
 
 # Things I Plan To Add:
  - Spritesheet Animation
  - Platformer / Top Down Collision System
- - Entity Parenting
