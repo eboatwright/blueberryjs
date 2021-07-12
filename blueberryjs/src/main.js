@@ -5,7 +5,7 @@ class PlayerController extends Component {
         this.moveSpeed = moveSpeed;
         this.jumpHeight = jumpHeight;
         this.jumpReleased = true;
-        this.spaceReleased = true;
+        this.lastGrounded = 0;
     }
 }
 
@@ -17,13 +17,11 @@ class PlayerControllerSystem extends System {
         super("playerControllerSystem");
         this.addRequirement("rigidBody");
         this.addRequirement("playerController");
-        this.addRequirement("soundEffect");
     }
 
     update(entity) {
         var rigidBody = entity.getComponent("rigidBody");
         var playerController = entity.getComponent("playerController");
-        var soundEffect = entity.getComponent("soundEffect");
 
         var input = 0;
 
@@ -32,19 +30,16 @@ class PlayerControllerSystem extends System {
 
         rigidBody.velocity.x += input * playerController.moveSpeed;
 
+        playerController.lastGrounded--;
+        if(rigidBody.grounded) playerController.lastGrounded = 8;
+
         if(isKeyDown("w")) {
-            if(playerController.jumpReleased)
+            if(playerController.jumpReleased && playerController.lastGrounded > 0)
                 rigidBody.velocity.y = playerController.jumpHeight;
             playerController.jumpReleased = false;
+            playerController.lastGrounded = 0;
         } else
             playerController.jumpReleased = true;
-
-        if(isKeyDown(" ")) {
-            if(playerController.spaceReleased)
-                soundEffect.play();
-            playerController.spaceReleased = false;
-        } else
-            playerController.spaceReleased = true;
     }
 }
 
@@ -98,7 +93,6 @@ function init() {
         .addComponent(new RigidBody(0.35, new Vector2(0.2, 0.01)))
         .addComponent(new PlayerController(0.72, -6))
         .addComponent(new ImageRenderer(createImage("img/player.png")))
-        .addComponent(new SoundEffect("sfx/baDing.wav"))
         
         .addTag("player")
         .addTag("collidesWithMap");

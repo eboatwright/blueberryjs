@@ -465,6 +465,9 @@ class MapCollisionSystem extends System {
             rigidBody.velocity.y *= rigidBody.friction.y;
             transform.position.y += rigidBody.velocity.y;
 
+            // SET RIGIDBODY NOT GROUNDED BEFORE WE CHECK
+            rigidBody.grounded = false;
+
             // LOOP THROUGH EACH ROW
             for(var y = 0; y < mapRenderer.map.length; y++)
                 // LOOP THROUGH EACH COLUMN
@@ -480,10 +483,15 @@ class MapCollisionSystem extends System {
                         // CHECK IF THE ENTITY AND THE TILE COLLIDE
                         if(boxCollidersOverlap(transform, boxCollider, tileTransform, tileBoxCollider)) {
                             // DEPENDING ON WHICH WAY THE PLAYER IS GOING ON THE Y AXIS, PLACE AT A DIFFERENT POSITION
-                            if(rigidBody.velocity.y > 0) // THIS "+ 0.75" FIXES JITTERING WHEN COLLIDING FROM THE TOP ¯\_(ツ)_/¯
+                            if(rigidBody.velocity.y > 0) { // THIS "+ 0.75" FIXES JITTERING WHEN COLLIDING FROM THE TOP ¯\_(ツ)_/¯
                                 transform.position.y = tileTransform.position.y - boxCollider.size.y - boxCollider.offset.y + 0.75;
-                            if(rigidBody.velocity.y < 0)
+                                if(rigidBody.gravity > 0) rigidBody.grounded = true; // CHECK IF GRAVITY GOES DOWNWARDS. IF TRUE, RIGIDBODY IS GROUNDED
+                            }
+                            if(rigidBody.velocity.y < 0) {
                                 transform.position.y = tileTransform.position.y - boxCollider.offset.y + (boxCollider.size.y + 1);
+                                if(rigidBody.gravity < 0) rigidBody.grounded = true; // CHECK IF GRAVITY GOES UPWARDS. IF TRUE, RIGIDBODY IS GROUNDED
+                            }
+
                             rigidBody.velocity.y = 0;
                         }
 
